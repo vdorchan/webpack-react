@@ -4,6 +4,7 @@ const path = require('path')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const loaderUtils = require('loader-utils')
 
 module.exports = (webpackEnv, argv) => {
   const isDevelopment = argv.mode === 'development'
@@ -63,6 +64,44 @@ module.exports = (webpackEnv, argv) => {
             // resolves paths in CSS and adds assets as dependencies.
             {
               loader: require.resolve('css-loader'),
+              options: {
+                modules: {
+                  getLocalIdent: (
+                    context,
+                    localIdentName,
+                    localName,
+                    options
+                  ) => {
+                    if (context.resourcePath.includes('node_modules')) {
+                      return localName
+                    }
+
+                    const fileNameOrFolder = context.resourcePath.match(
+                      /index\.module\.(css|scss|sass)$/
+                    )
+                      ? '[folder]'
+                      : '[name]'
+
+                    const hash = loaderUtils.getHashDigest(
+                      path.posix.relative(
+                        context.rootContext,
+                        context.resourcePath
+                      ) + localName,
+                      'md5',
+                      'base64',
+                      5
+                    )
+
+                    const className = loaderUtils.interpolateName(
+                      context,
+                      fileNameOrFolder + '_' + localName + '__' + hash,
+                      options
+                    )
+
+                    return className
+                  },
+                },
+              },
             },
           ].filter(Boolean),
         },

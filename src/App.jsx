@@ -1,8 +1,8 @@
 import React from 'react'
-import './App.css'
+import styles from './App.css'
 
 const App = () => {
-  return <div className='hello-world'>Hello World!</div>
+  return <div className={styles.helloWorld}>Hello World!</div>
 }
 
 export default App
