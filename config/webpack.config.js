@@ -5,6 +5,7 @@ const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const loaderUtils = require('loader-utils')
+const postcssNormalize = require('postcss-normalize')
 
 module.exports = (webpackEnv, argv) => {
   const isDevelopment = argv.mode === 'development'
@@ -100,6 +101,14 @@ module.exports = (webpackEnv, argv) => {
 
                     return className
                   },
+                },
+              },
+            },
+            {
+              loader: require.resolve('postcss-loader'),
+              options: {
+                postcssOptions: {
+                  plugins: ['postcss-preset-env', postcssNormalize()],
                 },
               },
             },
