@@ -6,31 +6,25 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const loaderUtils = require('loader-utils')
 const postcssNormalize = require('postcss-normalize')
+const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin')
+
+const paths = require('./paths')
 
 module.exports = (webpackEnv, argv) => {
   const isDevelopment = argv.mode === 'development'
   const isProduction = argv.mode === 'production'
 
-  const appDirectory = fs.realpathSync(process.cwd())
-  const appSrc = path.resolve(appDirectory, 'src')
-  const appIndexJS = path.resolve(appDirectory, 'src/index.jsx')
-  const appHtml = path.resolve(appDirectory, 'public/index.html')
-
-  const publicUrlOrPath = '/'
-
-  const appBuild = path.resolve(appDirectory, 'dist')
-
   return {
     // https://github.com/webpack/webpack-dev-server/issues/2758
     target: 'web',
-    entry: appIndexJS,
+    entry: paths.appIndexJS,
     output: {
-      path: appBuild,
+      path: paths.appBuild,
       // filename: 'static/js/[name].[contenthash:8].js',
       filename: isProduction
         ? 'static/js/[name].[contenthash:8].js'
         : isDevelopment && 'static/js/[name].bundle.js',
-      publicPath: publicUrlOrPath,
+      publicPath: paths.publicUrlOrPath,
       // Clean the output directory before emit.
       clean: true,
     },
@@ -41,7 +35,7 @@ module.exports = (webpackEnv, argv) => {
             // Process application JS with Babel.
             {
               test: /\.jsx?$/,
-              include: appSrc,
+              include: paths.appSrc,
               use: [
                 {
                   loader: require.resolve('babel-loader'),
@@ -49,6 +43,9 @@ module.exports = (webpackEnv, argv) => {
                     cacheDirectory: true,
                     // Difault, each Babel transform output will be compressed with Gzip.
                     cacheCompression: false,
+                    plugins: [
+                      isDevelopment && require.resolve('react-refresh/babel'),
+                    ].filter(Boolean),
                   },
                 },
               ],
@@ -56,7 +53,7 @@ module.exports = (webpackEnv, argv) => {
 
             {
               test: /\.css$/,
-              include: appSrc,
+              include: paths.appSrc,
               use: [
                 // In production, we use MiniCSSExtractPlugin to extract that CSS.
                 isProduction && {
@@ -146,11 +143,10 @@ module.exports = (webpackEnv, argv) => {
       ],
     },
     plugins: [
-      new webpack.HotModuleReplacementPlugin(),
       // Generates an `index.html` file with the <script> injected.
       new HtmlWebpackPlugin({
         inject: true,
-        template: appHtml,
+        template: paths.appHtml,
       }),
 
       isProduction &&
@@ -160,14 +156,16 @@ module.exports = (webpackEnv, argv) => {
           filename: 'static/css/[name].[contenthash:8].css',
           chunkFilename: 'static/css/[name].[contenthash:8].chunk.css',
         }),
+
+      isDevelopment && new ReactRefreshWebpackPlugin(),
     ].filter(Boolean),
     resolve: {
       // Attempt to resolve these extensions in order.
-      extensions: ['.js', '.jsx'],
+      extensions: ['.js', '.jsx', '.json'],
     },
     devServer: {
-      contentBase: appBuild,
-      contentBasePublicPath: publicUrlOrPath,
+      contentBase: paths.appBuild,
+      contentBasePublicPath: paths.publicUrlOrPath,
       compress: true,
       hot: true,
       port: 9000,
