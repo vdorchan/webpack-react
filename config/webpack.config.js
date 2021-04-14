@@ -7,6 +7,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const loaderUtils = require('loader-utils')
 const postcssNormalize = require('postcss-normalize')
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin')
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
 
 const paths = require('./paths')
 
@@ -27,6 +28,18 @@ module.exports = (webpackEnv, argv) => {
       publicPath: paths.publicUrlOrPath,
       // Clean the output directory before emit.
       clean: true,
+    },
+    optimization: {
+      minimize: isProduction,
+      minimizer: [
+        compiler => {
+          const TerserPlugin = require('terser-webpack-plugin')
+          new TerserPlugin({
+            terserOptions: {},
+          }).apply(compiler)
+        },
+        new CssMinimizerPlugin(),
+      ],
     },
     module: {
       rules: [
@@ -147,6 +160,7 @@ module.exports = (webpackEnv, argv) => {
       new HtmlWebpackPlugin({
         inject: true,
         template: paths.appHtml,
+        minify: isProduction,
       }),
 
       isProduction &&
