@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 
+const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 
@@ -68,6 +69,7 @@ module.exports = (webpackEnv, argv) => {
       ],
     },
     plugins: [
+      new webpack.HotModuleReplacementPlugin(),
       // Generates an `index.html` file with the <script> injected.
       new HtmlWebpackPlugin({
         inject: true,
@@ -85,6 +87,13 @@ module.exports = (webpackEnv, argv) => {
     resolve: {
       // Attempt to resolve these extensions in order.
       extensions: ['.js', '.jsx'],
+    },
+    devServer: {
+      contentBase: appBuild,
+      contentBasePublicPath: publicUrlOrPath,
+      compress: true,
+      hot: true,
+      port: 9000,
     },
   }
 }
