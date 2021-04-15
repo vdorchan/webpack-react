@@ -11,5 +11,7 @@ module.exports = {
 
   publicUrlOrPath: '/',
   appBuild: path.resolve(appDirectory, 'dist'),
-  appTsConfig: resolveApp('tsconfig.json')
+  appTsConfig: resolveApp('tsconfig.json'),
+  appPackageJson: resolveApp('package.json'),
+  appDirectory
 }

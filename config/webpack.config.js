@@ -8,15 +8,19 @@ const loaderUtils = require('loader-utils')
 const postcssNormalize = require('postcss-normalize')
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin')
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
+const WebpackBar = require('webpackbar')
 
 const paths = require('./paths')
+const { clearConsole } = require('../scripts/helper')
 
 module.exports = (webpackEnv, argv) => {
-  const isDevelopment = argv.mode === 'development'
-  const isProduction = argv.mode === 'production'
+  const isDevelopment = (argv?.mode || webpackEnv) === 'development'
+  const isProduction = (argv?.mode || webpackEnv) === 'production'
 
   return {
     // https://github.com/webpack/webpack-dev-server/issues/2758
+    mode: isDevelopment ? 'development' : 'production',
+    context: path.resolve(paths.appDirectory),
     target: 'web',
     entry: paths.appIndexJS,
     output: {
@@ -172,17 +176,26 @@ module.exports = (webpackEnv, argv) => {
         }),
 
       isDevelopment && new ReactRefreshWebpackPlugin(),
+
+      new WebpackBar({
+        reporter: {
+          start(context) {
+            isDevelopment && clearConsole()
+          },
+        },
+      }),
     ].filter(Boolean),
     resolve: {
       // Attempt to resolve these extensions in order.
       extensions: ['.js', '.jsx', '.json'],
     },
-    devServer: {
-      contentBase: paths.appBuild,
-      contentBasePublicPath: paths.publicUrlOrPath,
-      compress: true,
-      hot: true,
-      port: 9000,
+    stats: {
+      preset: 'none',
+      builtAt: true,
+      assets: true,
+      chunks: true,
+      entrypoints: true,
+      timings: true,
     },
   }
 }
