@@ -15,16 +15,68 @@ const paths = require('./paths')
 const { clearConsole } = require('../scripts/helper')
 
 const useTypeScript = fs.existsSync(paths.appTsConfig)
-console.log({ useTypeScript })
 
 module.exports = (webpackEnv, argv) => {
   const isDevelopment = (argv?.mode || webpackEnv) === 'development'
   const isProduction = (argv?.mode || webpackEnv) === 'production'
 
+  const getStyleLoaders = () => {
+    return [
+      // In production, we use MiniCSSExtractPlugin to extract that CSS.
+      isProduction && {
+        loader: MiniCssExtractPlugin.loader,
+      },
+      // turns CSS into JS modules that inject <style> tags.
+      isDevelopment && require.resolve('style-loader'),
+      // resolves paths in CSS and adds assets as dependencies.
+      {
+        loader: require.resolve('css-loader'),
+        options: {
+          modules: {
+            getLocalIdent: (context, localIdentName, localName, options) => {
+              if (context.resourcePath.includes('node_modules')) {
+                return localName
+              }
+
+              const fileNameOrFolder = context.resourcePath.match(
+                /index\.module\.(css|scss|sass)$/
+              )
+                ? '[folder]'
+                : '[name]'
+
+              const hash = loaderUtils.getHashDigest(
+                path.posix.relative(context.rootContext, context.resourcePath) +
+                  localName,
+                'md5',
+                'base64',
+                5
+              )
+
+              const className = loaderUtils.interpolateName(
+                context,
+                fileNameOrFolder + '_' + localName + '__' + hash,
+                options
+              )
+
+              return className
+            },
+          },
+        },
+      },
+      {
+        loader: require.resolve('postcss-loader'),
+        options: {
+          postcssOptions: {
+            plugins: ['postcss-preset-env', postcssNormalize()],
+          },
+        },
+      },
+    ].filter(Boolean)
+  }
+
   return {
     // https://github.com/webpack/webpack-dev-server/issues/2758
     mode: isDevelopment ? 'development' : 'production',
-    context: path.resolve(paths.appDirectory),
     target: 'web',
     entry: paths.appIndexJS,
     output: {
@@ -79,64 +131,33 @@ module.exports = (webpackEnv, argv) => {
             {
               test: /\.css$/,
               include: paths.appSrc,
+              use: getStyleLoaders(),
+            },
+            {
+              test: /\.less$/i,
               use: [
-                // In production, we use MiniCSSExtractPlugin to extract that CSS.
-                isProduction && {
-                  loader: MiniCssExtractPlugin.loader,
-                },
-                // turns CSS into JS modules that inject <style> tags.
-                isDevelopment && require.resolve('style-loader'),
-                // resolves paths in CSS and adds assets as dependencies.
+                ...getStyleLoaders(),
                 {
-                  loader: require.resolve('css-loader'),
+                  loader: 'less-loader',
                   options: {
-                    modules: {
-                      getLocalIdent: (
-                        context,
-                        localIdentName,
-                        localName,
-                        options
-                      ) => {
-                        if (context.resourcePath.includes('node_modules')) {
-                          return localName
-                        }
-
-                        const fileNameOrFolder = context.resourcePath.match(
-                          /index\.module\.(css|scss|sass)$/
-                        )
-                          ? '[folder]'
-                          : '[name]'
-
-                        const hash = loaderUtils.getHashDigest(
-                          path.posix.relative(
-                            context.rootContext,
-                            context.resourcePath
-                          ) + localName,
-                          'md5',
-                          'base64',
-                          5
-                        )
-
-                        const className = loaderUtils.interpolateName(
-                          context,
-                          fileNameOrFolder + '_' + localName + '__' + hash,
-                          options
-                        )
-
-                        return className
+                    lessOptions: {
+                      javascriptEnabled: true,
+                      modifyVars: {
+                        '@primary-color': '#5E6EFF',
+                        '@input-height-base': '40px',
+                        '@btn-height-base': '40px',
+                        '@border-color-split': '#EDEFF3',
+                        '@input-height-sm': '28px',
+                        '@btn-height-sm': '28px',
+                        '@btn-danger-bg': '#F5222D',
+                        '@border-radius-base': '4px',
+                        '@checkbox-size': '14px',
                       },
+                      silent: true,
                     },
                   },
                 },
-                {
-                  loader: require.resolve('postcss-loader'),
-                  options: {
-                    postcssOptions: {
-                      plugins: ['postcss-preset-env', postcssNormalize()],
-                    },
-                  },
-                },
-              ].filter(Boolean),
+              ],
             },
             {
               test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/, /\.webp/],
