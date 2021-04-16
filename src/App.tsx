@@ -1,6 +1,7 @@
 import React from 'react'
 import Dog from './components/Dog'
 import SvgBone from './assets/bone.svg'
+import Button from './components/Button'
 
 import styles from './App.css'
 
@@ -15,7 +16,7 @@ const App = () => {
     <div className={styles.helloWorld}>
       <h1>Hello World</h1>
       <div>
-        <button onClick={onClick}>Add</button>
+        <Button onClick={onClick} text="Add" />
         <span> count: {count}</span>
       </div>
       <Dog />

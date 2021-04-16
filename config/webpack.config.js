@@ -9,9 +9,13 @@ const postcssNormalize = require('postcss-normalize')
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin')
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
 const WebpackBar = require('webpackbar')
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
 
 const paths = require('./paths')
 const { clearConsole } = require('../scripts/helper')
+
+const useTypeScript = fs.existsSync(paths.appTsConfig)
+console.log({ useTypeScript })
 
 module.exports = (webpackEnv, argv) => {
   const isDevelopment = (argv?.mode || webpackEnv) === 'development'
@@ -51,7 +55,7 @@ module.exports = (webpackEnv, argv) => {
           oneOf: [
             // Process application JS with Babel.
             {
-              test: /\.jsx?$/,
+              test: /\.(js|jsx|ts|tsx)$/,
               include: paths.appSrc,
               use: [
                 {
@@ -63,6 +67,10 @@ module.exports = (webpackEnv, argv) => {
                     plugins: [
                       isDevelopment && require.resolve('react-refresh/babel'),
                     ].filter(Boolean),
+                    presets: [
+                      useTypeScript &&
+                        require.resolve('@babel/preset-typescript'),
+                    ],
                   },
                 },
               ],
@@ -184,10 +192,30 @@ module.exports = (webpackEnv, argv) => {
           },
         },
       }),
+
+      useTypeScript &&
+        new ForkTsCheckerWebpackPlugin({
+          async: isDevelopment,
+          typescript: {
+            configFile: paths.appTsConfig,
+            diagnosticOptions: {
+              semantic: true,
+              syntactic: true,
+            },
+            // If you use the babel-loader, it's recommended to use write-references mode to improve initial compilation time.
+            // If you use ts-loader, it's recommended to use write-tsbuildinfo mode to not overwrite files emitted by the ts-loader.
+            mode: 'write-references',
+          },
+        }),
     ].filter(Boolean),
     resolve: {
       // Attempt to resolve these extensions in order.
-      extensions: ['.js', '.jsx', '.json'],
+      extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'].filter(
+        ext => useTypeScript || !ext.includes('ts')
+      ),
+      alias: {
+        '@': paths.appSrc,
+      },
     },
     stats: {
       preset: 'none',
